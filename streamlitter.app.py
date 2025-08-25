@@ -330,4 +330,212 @@ elif menu == "Interactive Screening":
         st.subheader("Interactive Screening")
         b = user["bracket"]
         if b == "Child Malnutrition":
+            muac = st.number_input("MUAC — Mid-Upper Arm Circumference (cm)", min_value=0.0, step=0.1,
+                                   help="MUAC assesses acute malnutrition in ages 6–59 months.")
+            edema = st.selectbox("Bilateral pitting edema?", ["No", "Yes"])
+            if muac:
+                if muac < 11.5 or edema == "Yes":
+                    alert("Severe Acute Malnutrition (SAM) — urgent referral.", "danger")
+                elif 11.5 <= muac < 12.5:
+                    alert("Moderate Acute Malnutrition (MAM) — supplementary feeding & follow-up.", "warn")
+                else:
+                    alert("No acute malnutrition by MUAC — continue growth monitoring.")
+        elif b == "Pregnancy/Miscarriage Risk":
+            smoker = st.checkbox("Smoker/Vaping")
+            bmi = st.number_input("BMI — Body Mass Index", 10.0, 60.0, 24.0, 0.1)
+            prior = st.number_input("Number of prior pregnancy losses", 0, 10, 0)
+            if st.button("Evaluate Risk"):
+                score = int(smoker) + (1 if bmi < 18.5 or bmi > 30 else 0) + min(prior, 3)
+                if score >= 3:
+                    alert("Higher-than-average indicators — seek early antenatal care.", "warn")
+                else:
+                    alert("No major indicators flagged here. Maintain healthy habits.")
+        else:
+            st.write("**PRISMA-7 Frailty Screener** (Yes=1; for Q6, 'No' scores 1).")
+            qs = [
+                "Are you older than 85 years?",
+                "Male?",
+                "Health problems limit activities?",
+                "Need someone to help regularly?",
+                "Health problems require staying at home?",
+                "In case of need, can you count on someone close to you? (No scores 1)",
+                "Use a cane/walker/wheelchair?",
+            ]
+            scores = []
+            for i, q in enumerate(qs):
+                if i == 5:
+                    scores.append(st.selectbox(q, ["Yes", "No"]) == "No")
+                else:
+                    scores.append(st.selectbox(q, ["No", "Yes"]) == "Yes")
+            total = sum(scores)
+            if st.button("Compute PRISMA-7"):
+                if total >= 3:
+                    alert("Possible frailty — consider comprehensive geriatric assessment.", "warn")
+                else:
+                    alert("No frailty suggested by PRISMA-7.")
+        st.markdown("</div>", unsafe_allow_html=True)
 
+elif menu == "AI Assistant":
+    with st.container():
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("🤖 AI Health Assistant")
+        st.caption("Powered by OpenAI (if configured). Educational only, not medical advice.")
+        st.session_state.q = st.text_input("Ask a medical question", key="ai_q", value=st.session_state.q,
+                                           placeholder="e.g., Warning signs of dehydration in children?")
+        col_ask, col_clear = st.columns([1, 1])
+        with col_ask:
+            if st.button("Ask"):
+                q = st.session_state.q.strip()
+                if q:
+                    ans = ask_ai(q, user["language"])
+                    st.session_state.chat.append((q, ans))
+                    st.session_state.q = ""  # clear input
+                    st.experimental_rerun()
+        with col_clear:
+            if st.button("Clear Chat"):
+                st.session_state.chat = []
+                st.experimental_rerun()
+
+        # Show chat history
+        for uq, ua in reversed(st.session_state.chat[-10:]):
+            st.markdown(f"**You:** {uq}")
+            st.markdown(f"**AI:** {ua}")
+            # Optional voice
+            audio = tts_bytes(ua, user["language"])
+            if audio:
+                st.audio(audio)
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+elif menu == "Awareness Media":
+    with st.container():
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("📸 Awareness — Images & Videos")
+        st.image("https://upload.wikimedia.org/wikipedia/commons/0/0a/Child_malnutrition.jpg",
+                 caption="Child malnutrition remains globally prevalent.")
+        st.video("https://www.youtube.com/watch?v=kl1ujzRidmU")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+elif menu == "Prevention Animations":
+    with st.container():
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("🎬 Prevention Animations")
+        st.write("Handwashing, nutrition diversity, safe activity during pregnancy, and fall prevention.")
+        st.image("https://media.giphy.com/media/3o6ZsZknK9PNg5FfEA/giphy.gif", caption="Proper handwashing steps")
+        st.image("https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif", caption="Alert animation example")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+elif menu == "Emergency Connect":
+    with st.container():
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("🚨 Emergency Connect")
+        meta = COUNTRY_INFO[user["country"]]
+        st.markdown(f"**Local Emergency:** {meta.emergency} &nbsp;|&nbsp; **Required phone prefix:** {meta.prefix}")
+        phone = st.text_input("Trusted contact number (include country code)", value=meta.prefix)
+        if st.button("Verify & Simulate Call"):
+            if validate_phone(meta.prefix, phone):
+                alert(f"Calling {phone} and local emergency {meta.emergency}… (simulation)")
+                st.image("https://media.giphy.com/media/l0ExvMq5G5IsnXzRS/giphy.gif")
+            else:
+                alert(f"Phone must start with {meta.prefix} and include digits only (e.g., {meta.prefix}3XXXXXXXXX).", "warn")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+elif menu == "Wearable Band":
+    with st.container():
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("⌚ Wearable Band — Live Simulation")
+        placeholder = st.empty()
+        if st.button("Start 10-second Stream"):
+            alarmed = False
+            for _ in range(10):
+                hr = random.randint(44, 120)
+                temp = round(random.uniform(35.2, 39.8), 1)
+                spo2 = random.randint(90, 100)
+                with placeholder.container():
+                    c1, c2, c3 = st.columns(3)
+                    c1.metric("Heart Rate (bpm)", hr)
+                    c2.metric("Temperature (°C)", temp)
+                    c3.metric("SpO₂ (%)", spo2)
+                    if hr < 50 or spo2 < 92:
+                        alarmed = True
+                        alert("Threshold crossed — ringing alarm & preparing auto-call.", "danger")
+                        st.image("https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif")
+                time.sleep(1)
+            if alarmed:
+                alert("Auto-call simulation to trusted contact & local emergency.", "warn")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+elif menu == "Pharmacies & Medicines":
+    with st.container():
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("🏥 Pharmacies Nearby & Medicine Library")
+        meta = COUNTRY_INFO[user["country"]]
+        st.markdown("**Nearby pharmacies (sample data):**")
+        cols = st.columns(2)
+        for i, ph in enumerate(meta.pharmacies):
+            with cols[i % 2]:
+                st.image(ph["img"], width=80)
+                st.markdown(f"**{ph['name']}** — {ph['city']}")
+        st.markdown("<hr class='div'/>", unsafe_allow_html=True)
+        st.markdown("**Common medicines (education):**")
+        cols2 = st.columns(3)
+        for i, m in enumerate(MED_LIBRARY):
+            with cols2[i % 3]:
+                st.image(m["img"], width=100)
+                st.markdown(f"**{m['name']}**")
+                st.caption(m["use"])
+        st.markdown("</div>", unsafe_allow_html=True)
+
+elif menu == "Emergency Quiz":
+    with st.container():
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("🧠 Emergency Preparedness Quiz")
+        q1 = st.radio("You witness a fainting episode. First action?", [
+            "Give water immediately",
+            "Check responsiveness & breathing",
+            "Take a photo for documentation",
+        ])
+        if st.button("Submit"):
+            if q1 == "Check responsiveness & breathing":
+                alert("Correct: ensure airway/breathing, then call emergency.")
+            else:
+                alert("Not quite. Always check responsiveness & breathing first.", "warn")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+elif menu == "Document Analysis":
+    with st.container():
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("📂 Health Document Analysis")
+        up = st.file_uploader("Upload CSV or PDF")
+        if up:
+            if up.name.lower().endswith(".csv"):
+                try:
+                    df = pd.read_csv(up)
+                except Exception:
+                    up.seek(0)
+                    df = pd.read_csv(up, encoding_errors="ignore")
+                st.dataframe(df.head(50))
+                st.write("Basic stats:")
+                st.write(df.describe(include="all"))
+            elif up.name.lower().endswith(".pdf") and _PDF_OK:
+                try:
+                    reader = PdfReader(up)
+                    pages = [p.extract_text() or "" for p in reader.pages]
+                    text = "\n".join(pages)[:4000]
+                    st.text_area("Extracted text (first 4k chars)", text, height=260)
+                except Exception as e:
+                    alert(f"PDF parsing error: {e}", "warn")
+            else:
+                alert("Install PyPDF2 to enable PDF parsing or upload a CSV.", "warn")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+elif menu == "About & Disclaimers":
+    with st.container():
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("About & Disclaimers")
+        st.write(
+            "This app supports **UN Sustainable Development Goal 3** (Good Health & Well-Being). "
+            "Designed by **Muhammad Ibrahim Raja**. Algorithms are simplified for education."
+        )
+        alert("This is not medical advice. Follow local protocols & consult clinicians.", "warn")
+        st.markdown("</div>", unsafe_allow_html=True)
