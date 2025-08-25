@@ -613,7 +613,13 @@ elif menu == "About / Disclaimers":
     st.markdown("</div>", unsafe_allow_html=True)
 
 # End of app
-Notes & next steps
+st.subheader("📝 Notes and Next Steps")
+st.write("""
+- This app is for awareness and educational purposes.  
+- It should not replace medical professionals.  
+- Next step: Deploy on Streamlit Cloud or HuggingFace Spaces.  
+- Add more datasets for malnutrition, pregnancy risks, elderly health.  
+""")
 
 Save the file as streamlit_app.py at repository root.
 
