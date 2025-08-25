@@ -3,6 +3,22 @@ import pandas as pd
 import numpy as np
 import random
 import openai
+# --- OpenAI client (new SDK with legacy fallback) ---
+try:
+    from openai import OpenAI
+    _OPENAI_CLIENT = OpenAI(api_key=st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY","")))
+    _OPENAI_MODE = "new"
+except Exception:
+    try:
+        import importlib
+        openai = importlib.import_module("openai")  # legacy SDK
+        openai.api_key = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY",""))
+        _OPENAI_CLIENT = None
+        _OPENAI_MODE = "legacy"
+    except Exception:
+        _OPENAI_CLIENT = None
+        _OPENAI_MODE = "none"
+
 from gtts import gTTS
 import os
 from io import BytesIO
