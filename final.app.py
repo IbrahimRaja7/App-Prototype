@@ -613,6 +613,7 @@ elif menu == "About / Disclaimers":
     st.markdown("</div>", unsafe_allow_html=True)
 
 # End of app
+
 st.subheader("📝 Notes and Next Steps")
 st.write("""
 - This app is for awareness and educational purposes.  
