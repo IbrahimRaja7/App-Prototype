@@ -38,7 +38,7 @@ web: streamlit run streamlit_app.py
 
 # Files
 
-* streamlit_app.py  — main Streamlit app
+
 * data_fetch.py     — NASA / JPL / USGS data wrappers
 * simulation.py     — impact physics, crater scaling, deflection models
 * orbital.py        — orbit propagation helpers (skyfield optional)
