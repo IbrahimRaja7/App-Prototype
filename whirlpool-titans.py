@@ -6,7 +6,6 @@ import pandas as pd
 from datetime import datetime, timedelta
 import requests
 import json
-from scipy.integrate import odeint
 import math
 
 # Page configuration
