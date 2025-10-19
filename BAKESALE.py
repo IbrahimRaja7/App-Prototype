@@ -12,8 +12,13 @@ def load_data():
     """Load saved data from JSON file if it exists."""
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r") as f:
-            return json.load(f)
+            data = json.load(f)
+            # Convert string keys back to integers
+            if "note_counts" in data:
+                data["note_counts"] = {int(k): v for k, v in data["note_counts"].items()}
+            return data
     else:
+        # Default data if no file exists
         return {
             "paan_qty": 50,
             "lemon_qty": 30,
@@ -25,7 +30,7 @@ def load_data():
         }
 
 def save_data():
-    """Save current session data to JSON."""
+    """Save current session data to JSON file."""
     data = {
         "paan_qty": st.session_state.paan_qty,
         "lemon_qty": st.session_state.lemon_qty,
@@ -38,7 +43,7 @@ def save_data():
     with open(DATA_FILE, "w") as f:
         json.dump(data, f, indent=4)
 
-# --- Load data at startup ---
+# --- Load Data on Startup ---
 saved_data = load_data()
 
 # --- Initialize Session State ---
@@ -100,15 +105,14 @@ paan_profit = st.session_state.paan_profit
 lemon_profit = st.session_state.lemon_profit
 total_profit = paan_profit + lemon_profit
 
-# --- Summary Section ---
+# --- Financial Summary ---
 st.header("💰 Financial Summary")
-
 c1, c2, c3 = st.columns(3)
 c1.metric("Total Money Invested", f"Rs {paan_invested + lemon_invested}")
 c2.metric("Total Money Received", f"Rs {paan_received + lemon_received}")
 c3.metric("💸 Total Profit", f"Rs {total_profit}")
 
-# --- Detailed Breakdown ---
+# --- Item Breakdown ---
 st.markdown("#### 📊 Item-Wise Breakdown")
 summary_data = {
     "Item": ["Paan", "Lemon Soda"],
@@ -136,7 +140,7 @@ st.markdown("Manage your collected cash denominations:")
 for note, label in notes.items():
     cols = st.columns([2, 1, 1])
     with cols[0]:
-        st.markdown(f"**{label}:** {st.session_state.note_counts[str(note)] if isinstance(st.session_state.note_counts, dict) and str(note) in st.session_state.note_counts else st.session_state.note_counts[note]}")
+        st.markdown(f"**{label}:** {st.session_state.note_counts[note]}")
     with cols[1]:
         if st.button(f"+{note}", key=f"add_{note}"):
             st.session_state.note_counts[note] += 1
@@ -149,5 +153,7 @@ for note, label in notes.items():
                 save_data()
                 st.rerun()
 
+# --- Total Cash Calculation ---
 total_money = sum(note * count for note, count in st.session_state.note_counts.items())
 st.success(f"💵 **Total Cash from Notes:** Rs {total_money}")
+
