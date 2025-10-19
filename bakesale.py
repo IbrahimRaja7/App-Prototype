@@ -4,7 +4,6 @@ import streamlit as st
 st.set_page_config(page_title="Bake Sale Tracker", page_icon="🍰", layout="wide")
 
 st.title("🍰 Bake Sale Dashboard")
-
 st.markdown("Keep track of your bake sale items, sales, and cash notes easily!")
 
 # --- Initialize session state ---
@@ -88,7 +87,7 @@ summary_data = {
 
 st.dataframe(summary_data, use_container_width=True)
 
-# --- Notes Counter ---
+# --- Notes Counter (Updated with instant response) ---
 st.header("💵 Cash Notes Counter")
 
 notes = {
@@ -104,22 +103,24 @@ notes = {
 if "note_counts" not in st.session_state:
     st.session_state.note_counts = {note: 0 for note in notes.keys()}
 
-total_money = 0
-
 st.markdown("Manage your collected cash denominations:")
 
 for note, label in notes.items():
-    colA, colB, colC = st.columns([2, 1, 1])
-    with colA:
-        st.write(f"**{label}:** {st.session_state.note_counts[note]}")
-    with colB:
+    cols = st.columns([2, 1, 1])
+    with cols[0]:
+        st.markdown(f"**{label}:** {st.session_state.note_counts[note]}")
+    with cols[1]:
         if st.button(f"+{note}", key=f"add_{note}"):
             st.session_state.note_counts[note] += 1
-    with colC:
+            st.rerun()
+    with cols[2]:
         if st.button(f"-{note}", key=f"sub_{note}"):
             if st.session_state.note_counts[note] > 0:
                 st.session_state.note_counts[note] -= 1
-    total_money += note * st.session_state.note_counts[note]
+            st.rerun()
+
+# Compute total *after* updates
+total_money = sum(note * count for note, count in st.session_state.note_counts.items())
 
 st.success(f"💵 **Total Cash from Notes:** Rs {total_money}")
 
