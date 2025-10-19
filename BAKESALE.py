@@ -13,21 +13,11 @@ def load_data():
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r") as f:
             data = json.load(f)
-            # Convert string keys back to integers
             if "note_counts" in data:
                 data["note_counts"] = {int(k): v for k, v in data["note_counts"].items()}
             return data
     else:
-        # Default data if no file exists
-        return {
-            "paan_qty": 50,
-            "lemon_qty": 30,
-            "paan_money": 0,
-            "lemon_money": 0,
-            "paan_profit": 0,
-            "lemon_profit": 0,
-            "note_counts": {10: 0, 20: 0, 50: 0, 100: 0, 500: 0, 1000: 0, 5000: 0}
-        }
+        return default_data()
 
 def save_data():
     """Save current session data to JSON file."""
@@ -42,6 +32,24 @@ def save_data():
     }
     with open(DATA_FILE, "w") as f:
         json.dump(data, f, indent=4)
+
+def default_data():
+    """Default dataset for app initialization or reset."""
+    return {
+        "paan_qty": 50,
+        "lemon_qty": 30,
+        "paan_money": 0,
+        "lemon_money": 0,
+        "paan_profit": 0,
+        "lemon_profit": 0,
+        "note_counts": {10: 0, 20: 0, 50: 0, 100: 0, 500: 0, 1000: 0, 5000: 0}
+    }
+
+def reset_data():
+    """Reset everything to default values."""
+    for key, value in default_data().items():
+        st.session_state[key] = value
+    st.success("🔄 All data has been reset to default values!")
 
 # --- Load Data on Startup ---
 saved_data = load_data()
@@ -63,18 +71,16 @@ def sell_paan():
         st.session_state.paan_qty -= 1
         st.session_state.paan_money += PAAN_SELL
         st.session_state.paan_profit += (PAAN_SELL - PAAN_COST)
-        save_data()
 
 def sell_lemon():
     if st.session_state.lemon_qty > 0:
         st.session_state.lemon_qty -= 1
         st.session_state.lemon_money += LEMON_SELL
         st.session_state.lemon_profit += (LEMON_SELL - LEMON_COST)
-        save_data()
 
 # --- Header ---
 st.title("🍰 Bake Sale Dashboard")
-st.markdown("Keep track of your bake sale items, profits, and cash notes — permanently!")
+st.markdown("Track your bake sale performance, profits, and cash safely — with manual save and reset options.")
 
 # --- Items Section ---
 st.header("🧾 Items on Sale")
@@ -144,16 +150,28 @@ for note, label in notes.items():
     with cols[1]:
         if st.button(f"+{note}", key=f"add_{note}"):
             st.session_state.note_counts[note] += 1
-            save_data()
             st.rerun()
     with cols[2]:
         if st.button(f"-{note}", key=f"sub_{note}"):
             if st.session_state.note_counts[note] > 0:
                 st.session_state.note_counts[note] -= 1
-                save_data()
-                st.rerun()
+            st.rerun()
 
 # --- Total Cash Calculation ---
 total_money = sum(note * count for note, count in st.session_state.note_counts.items())
 st.success(f"💵 **Total Cash from Notes:** Rs {total_money}")
 
+# --- Save & Reset Buttons ---
+st.markdown("---")
+save_col, reset_col = st.columns(2)
+
+with save_col:
+    if st.button("💾 Save Data to File", use_container_width=True):
+        save_data()
+        st.success("✅ Data saved successfully to bakesale_data.json!")
+
+with reset_col:
+    if st.button("♻️ Reset All Data", use_container_width=True):
+        if st.confirm("Are you sure you want to reset all data? This cannot be undone."):
+            reset_data()
+            st.rerun()
